@@ -1,0 +1,34 @@
+@using System.Diagnostics.CodeAnalysis
+@using Workshop4.Application.Pipelines.Models
+@using Direction = Phazor.Components.Models.Direction
+@namespace Workshop4.Presentation.Components.Pipeline
+
+<MudText Typo="Typo.subtitle2">
+    Operation history
+</MudText>
+
+<PhazorScroll Direction="Direction.Vertical" Class="pa-3">
+    @if (ExecutionFrames.Count is 0)
+    {
+        <MudText Color="Color.Secondary">No steps yet.</MudText>
+    }
+    else
+    {
+        <MudStack Spacing="2">
+            @foreach (ExecutionFrame executionFrame in ExecutionFrames)
+            {
+                <ExecutionFrameComponent ExecutionFrame="executionFrame"/>
+            }
+        </MudStack>
+    }
+</PhazorScroll>
+
+
+@code {
+
+    [NotNull]
+    [Parameter]
+    [EditorRequired]
+    public IReadOnlyCollection<ExecutionFrame>? ExecutionFrames { get; set; }
+
+}

@@ -4,5 +4,5 @@ namespace Workshop4.Application.Pipelines.Presentation;
 
 public interface IPipelinePresentationManager
 {
-    void OnExecutingNodeChanged(IPipelineNode node);
+    Task OnExecutingNodeChangedAsync(IPipelineNode node);
 }

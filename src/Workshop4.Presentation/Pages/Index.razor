@@ -1,0 +1,258 @@
+@page "/"
+@using Workshop4.Presentation.Services
+@using Workshop4.Presentation.Components.Pipeline
+@using Workshop4.Application.Pipelines.Nodes
+@using Workshop4.Application.Json.Factories
+@using Workshop4.Application.Json.Models
+@using Workshop4.Application.Pipelines.Models
+@using System.Linq
+@using Phazor.Components.Models
+@using Workshop4.Application.Json
+@using Workshop4.Presentation.Models
+@using HorizontalAlignment = Phazor.Components.Models.HorizontalAlignment
+@implements Workshop4.Application.Pipelines.Presentation.IPipelinePresentationManager
+
+<PageTitle>Workshop 4</PageTitle>
+
+<PhazorHStack
+    Horizontal="HorizontalDistribution.Between"
+    Vertical="VerticalAlignment.Stretch"
+    Class="pa-4"
+    Gap="15px">
+
+    <MudCard Style="flex-basis: 20%" Elevation="3">
+        <MudCardContent>
+            <PhazorVStack
+                Horizontal="HorizontalAlignment.Stretch"
+                Gap="10px">
+
+                <PipelineControlsComponent
+                    OnRunClicked="@StartRunAsync"
+                    OnDebugClicked="@StartDebugAsync"
+                    OnStepBackClicked="@StepBackwardAsync"
+                    OnStepForwardClicked="@StepForwardAsync"
+                    OnPassClicked="@PassAsync"
+                    StepBackDisabled="_executionFrameStack.Count < 1"/>
+
+                <MudTextField
+                    @bind-Value="@AppState.Instance.InputJson"
+                    FullWidth="true"
+                    Lines="14"
+                    Label="JSON"
+                    Variant="Variant.Outlined"
+                    Disabled="@AppState.Instance.IsExecuting"
+                    Class="mud-input-height-full"
+                    Style="flex-grow: 1"/>
+
+            </PhazorVStack>
+        </MudCardContent>
+    </MudCard>
+
+    <WorkspaceComponent CurrentExecutingNode="_currentExecutingNode"/>
+    <OutputComponent ExecutionFrames="_executionFrameStack"/>
+
+</PhazorHStack>
+
+@code {
+    private readonly IJsonDocumentFactory _jsonFactory = new JsonDocumentFactory();
+    private readonly Stack<ExecutionFrame> _executionFrameStack = [];
+
+    private JsonDocument? _workingDocument;
+    private IPipelineNode? _currentExecutingNode;
+
+    protected override void OnInitialized()
+    {
+        AppState.Instance.Initialize(MockFactory.CreatePipeline());
+    }
+
+    private async Task StartRunAsync()
+    {
+        if (AppState.Instance.IsExecuting)
+            return;
+
+        AppState.Instance.ExecutionState = ExecutionState.Run;
+        _executionFrameStack.Clear();
+
+        AppState.Instance.BackupNavigationStack();
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            _workingDocument = _jsonFactory.CreateDocument(AppState.Instance.InputJson);
+            AppState.Instance.OutputText = JsonDocumentFormatter.FormatDocument(_workingDocument);
+
+            foreach (IPipelineNode node in AppState.Instance.RootGroup.ChildNodes)
+            {
+                if (node.IsEnabled is false)
+                    continue;
+
+                NodeExecutionResult nodeResult = await node.ExecuteAsync(_workingDocument, this);
+
+                if (nodeResult is NodeExecutionResult.Success success)
+                {
+                    _executionFrameStack.Push(new ExecutionFrame(node, _workingDocument));
+                    _workingDocument = success.Document;
+
+                    await InvokeAsync(StateHasChanged);
+                }
+                else if (nodeResult is NodeExecutionResult.Failure fail)
+                {
+                    AppState.Instance.OutputText = $"ERROR: {fail.ErrorMessage}";
+                    return;
+                }
+                else
+                {
+                    AppState.Instance.OutputText = "Unknown result";
+                    return;
+                }
+            }
+
+            AppState.Instance.OutputText = _workingDocument is not null ? JsonDocumentFormatter.FormatDocument(_workingDocument) : "[]";
+        }
+        finally
+        {
+            FinishExecution();
+        }
+    }
+
+    private async Task StartDebugAsync()
+    {
+        if (AppState.Instance.IsExecuting)
+            return;
+
+        AppState.Instance.ExecutionState = ExecutionState.Debug;
+        _executionFrameStack.Clear();
+
+        AppState.Instance.BackupNavigationStack();
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            _workingDocument = _jsonFactory.CreateDocument(AppState.Instance.InputJson);
+            AppState.Instance.OutputText = JsonDocumentFormatter.FormatDocument(_workingDocument);
+            
+            await InvokeAsync(StateHasChanged);
+            _currentExecutingNode = null;
+        }
+        catch (Exception e)
+        {
+            AppState.Instance.OutputText = e.Message;
+        }
+    }
+
+    private async Task StepForwardAsync()
+    {
+        if (AppState.Instance.ExecutionState is not ExecutionState.Debug || _workingDocument is null)
+            return;
+
+        IEnumerable<IPipelineNode> enabledNodes = AppState.Instance.RootGroup.ChildNodes.Where(x => x.IsEnabled);
+
+        _currentExecutingNode = _currentExecutingNode is null
+            ? enabledNodes.First()
+            : enabledNodes.SkipWhile(x => x != _currentExecutingNode).Skip(1).FirstOrDefault();
+
+        if (_currentExecutingNode is null)
+        {
+            FinishExecution();
+            return;
+        }
+
+        NodeExecutionResult nodeResult = await _currentExecutingNode.ExecuteAsync(_workingDocument, this);
+        _executionFrameStack.Push(new ExecutionFrame(_currentExecutingNode, _workingDocument));
+
+        if (nodeResult is NodeExecutionResult.Success ok)
+        {
+            _workingDocument = ok.Document;
+            AppState.Instance.OutputText = JsonDocumentFormatter.FormatDocument(_workingDocument);
+        }
+        else if (nodeResult is NodeExecutionResult.Failure fail)
+        {
+            AppState.Instance.OutputText = $"ERROR: {fail.ErrorMessage}";
+            FinishExecution();
+        }
+        else
+        {
+            AppState.Instance.OutputText = "Unknown result";
+            FinishExecution();
+        }
+    }
+
+    private async Task StepBackwardAsync()
+    {
+        if (AppState.Instance.ExecutionState is not ExecutionState.Debug)
+            return;
+
+        if (_executionFrameStack.TryPop(out ExecutionFrame? frame) is false)
+            return;
+
+        _executionFrameStack.TryPeek(out ExecutionFrame? currentFrame);
+
+        _currentExecutingNode = currentFrame?.Node;
+        _workingDocument = frame.Input;
+        AppState.Instance.OutputText = _workingDocument is not null ? JsonDocumentFormatter.FormatDocument(_workingDocument) : "[]";
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task PassAsync()
+    {
+        if (AppState.Instance.ExecutionState is not ExecutionState.Debug || _workingDocument is null)
+            return;
+
+        AppState.Instance.ExecutionState = ExecutionState.Run;
+
+        IEnumerable<IPipelineNode> enabledNodes = AppState.Instance.RootGroup.ChildNodes.Where(x => x.IsEnabled);
+
+        IEnumerable<IPipelineNode> remainingNodes = _currentExecutingNode is null
+            ? enabledNodes
+            : enabledNodes.SkipWhile(x => x != _currentExecutingNode).Skip(1);
+
+        foreach (IPipelineNode node in remainingNodes)
+        {
+            NodeExecutionResult nodeResult = await node.ExecuteAsync(_workingDocument, this);
+
+            if (nodeResult is NodeExecutionResult.Success success)
+            {
+                _executionFrameStack.Push(new ExecutionFrame(node, _workingDocument));
+                _workingDocument = success.Document;
+
+                await InvokeAsync(StateHasChanged);
+            }
+            else if (nodeResult is NodeExecutionResult.Failure fail)
+            {
+                AppState.Instance.OutputText = $"ERROR: {fail.ErrorMessage}";
+                return;
+            }
+            else
+            {
+                AppState.Instance.OutputText = "Unknown result";
+                return;
+            }
+        }
+
+        AppState.Instance.OutputText = JsonDocumentFormatter.FormatDocument(_workingDocument);
+        FinishExecution();
+    }
+
+    private void FinishExecution()
+    {
+        AppState.Instance.ExecutionState = ExecutionState.None;
+        _currentExecutingNode = null;
+
+        AppState.Instance.RestoreNavigationStack();
+        StateHasChanged();
+    }
+
+    public async Task OnExecutingNodeChangedAsync(IPipelineNode node)
+    {
+        _currentExecutingNode = node;
+
+        if (AppState.Instance.IsExecuting && node is GroupNode group)
+        {
+            AppState.Instance.NavigateTo(group);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

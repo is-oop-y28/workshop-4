@@ -32,7 +32,7 @@ public sealed class JsonDocumentFactory : IJsonDocumentFactory
 
             null => new JsonNullDocument(),
 
-            _ => throw new ArgumentOutOfRangeException(nameof(node))
+            _ => throw new ArgumentOutOfRangeException(nameof(node)),
         };
     }
 

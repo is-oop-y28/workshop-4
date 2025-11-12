@@ -1,0 +1,108 @@
+@namespace Workshop4.Presentation.Components.Nodes
+@using System.Diagnostics.CodeAnalysis
+@using Phazor.Components.Models
+@using Workshop4.Application.Pipelines.Nodes
+@using Workshop4.Presentation.Services
+
+<MudCard Class="node-card" Elevation="0">
+    <MudCardHeader>
+        <PhazorHStack
+            Horizontal="HorizontalDistribution.Between">
+
+            <PhazorHStack
+                Horizontal="HorizontalDistribution.Left"
+                Variant="PhazorStackVariant.Compact">
+
+                <MudIcon Icon="@Icons.Material.Filled.Transform"/>
+                <MudText Typo="Typo.subtitle1">Map</MudText>
+
+            </PhazorHStack>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@AppState.Instance.IsExecuting"
+                       OnClick="@AddProjection">
+                Add mapping
+            </MudButton>
+
+        </PhazorHStack>
+    </MudCardHeader>
+
+    <MudCardContent Class="d-flex flex-column" Style="gap:8px; flex:1 1 auto; overflow:auto;">
+        @if (Node.Projections.Count is 0)
+        {
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                No projections yet. Click "Add projection" to start mapping.
+            </MudAlert>
+        }
+        else
+        {
+            <PhazorGrid
+                DisableAnimation="true"
+                Dimension="PhazorGridDimension.Rows"
+                Columns="1fr 1fr auto"
+                Gap="10px">
+
+                @foreach (MappingNodeProjection projection in Node.Projections)
+                {
+                    <PhazorGridSection>
+                        <PhazorGridItem>
+                            <MudTextField @bind-Value="projection.SourceFieldName"
+                                          Label="Source field"
+                                          Variant="Variant.Outlined"
+                                          Placeholder="e.g. name"
+                                          Disabled="@AppState.Instance.IsExecuting"
+                                          Immediate="true"
+                                          FullWidth="true"/>
+                        </PhazorGridItem>
+                        <PhazorGridItem>
+                            <MudTextField @bind-Value="projection.TargetFieldName"
+                                          Label="Target field"
+                                          Variant="Variant.Outlined"
+                                          Placeholder="e.g. fullName"
+                                          Disabled="@AppState.Instance.IsExecuting"
+                                          Immediate="true"
+                                          FullWidth="true"/>
+                        </PhazorGridItem>
+                        <PhazorGridItem>
+                            <MudIconButton
+                                Icon="@Icons.Material.Filled.Remove"
+                                Color="Color.Error"
+                                OnClick="@(() => RemoveProjection(projection))"
+                                Variant="Variant.Filled"
+                                Disabled="@AppState.Instance.IsExecuting"/>
+                        </PhazorGridItem>
+                    </PhazorGridSection>
+                }
+
+            </PhazorGrid>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+
+    [NotNull]
+    [Parameter]
+    [EditorRequired]
+    public MappingNode? Node { get; set; }
+
+    private void AddProjection()
+    {
+        Node.AddProjection(new MappingNodeProjection
+        {
+            SourceFieldName = string.Empty,
+            TargetFieldName = string.Empty,
+        });
+
+        StateHasChanged();
+    }
+
+    private void RemoveProjection(MappingNodeProjection projection)
+    {
+        Node.RemoveProjection(projection);
+        StateHasChanged();
+    }
+
+}

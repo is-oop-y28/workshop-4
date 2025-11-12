@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Workshop4.Application.Json.Models;
 using Workshop4.Application.Pipelines.Models;
 using Workshop4.Application.Pipelines.Presentation;
@@ -7,7 +8,7 @@ namespace Workshop4.Application.Pipelines.Nodes;
 
 public sealed class MappingNode : IPipelineNode
 {
-    private readonly HashSet<MappingNodeProjection> _projections = [];
+    private readonly List<MappingNodeProjection> _projections = [];
 
     public bool IsEnabled { get; set; }
 
@@ -30,8 +31,8 @@ public sealed class MappingNode : IPipelineNode
         if (IsEnabled is false)
             return new NodeExecutionResult.Success(input);
 
-        presentationManager.OnExecutingNodeChanged(this);
-        await Task.Delay(TimeSpan.FromMilliseconds(200));
+        await presentationManager.OnExecutingNodeChangedAsync(this);
+        await Task.Delay(TimeSpan.FromMilliseconds(500));
 
         if (input is JsonObjectDocument obj)
         {
@@ -83,5 +84,17 @@ public sealed class MappingNode : IPipelineNode
 
         projectedObject = new JsonObjectDocument(properties);
         return true;
+    }
+
+    public override string ToString()
+    {
+        if (Projections.Count == 0)
+            return "Map (no projections)";
+
+        IEnumerable<string> pairs = Projections
+            .Select(projection => $"{projection.SourceFieldName}->{projection.TargetFieldName}");
+
+        var joined = string.Join(", ", pairs);
+        return $"Map {joined}";
     }
 }

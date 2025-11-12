@@ -3,7 +3,7 @@ using Workshop4.Application.Json.Models;
 
 namespace Workshop4.Application.Pipelines.Nodes;
 
-public sealed record MappingNodeProjection
+public sealed class MappingNodeProjection
 {
     public string SourceFieldName { get; set; } = string.Empty;
 
@@ -11,13 +11,19 @@ public sealed record MappingNodeProjection
 
     public bool TryProjectProperty(JsonObjectDocument obj, [NotNullWhen(true)] out JsonProperty? property)
     {
-        if (obj.TryGetProperty(SourceFieldName, out JsonProperty? jsonProperty) is false)
+        if (string.IsNullOrEmpty(SourceFieldName))
         {
-            property = null;
-            return false;
+            property = obj.TryGetProperty(TargetFieldName, out JsonProperty? jsonProperty)
+                ? jsonProperty
+                : null;
+        }
+        else
+        {
+            property = obj.TryGetProperty(SourceFieldName, out JsonProperty? jsonProperty)
+                ? jsonProperty with { Name = TargetFieldName }
+                : null;
         }
 
-        property = new JsonProperty(TargetFieldName, jsonProperty.Value);
-        return true;
+        return property is not null;
     }
 }

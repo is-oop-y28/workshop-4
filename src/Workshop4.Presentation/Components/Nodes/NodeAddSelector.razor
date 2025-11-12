@@ -1,0 +1,37 @@
+@namespace Workshop4.Presentation.Components.Nodes
+@using Workshop4.Application.Pipelines.NodeFactories
+@using Workshop4.Application.Pipelines.Nodes
+@using Workshop4.Presentation.Services
+
+<MudMenu
+    Label="Add node"
+    Variant="Variant.Filled"
+    Style="white-space: nowrap"
+    Disabled="@AppState.Instance.IsExecuting">
+
+    @foreach (IPipelineNodeFactory factory in PipelineNodeFactories)
+    {
+        <MudMenuItem
+            Label="@factory.Name"
+            OnClick="@(() => Create(factory))"/>
+    }
+</MudMenu>
+
+@code {
+
+    private static readonly IReadOnlyCollection<IPipelineNodeFactory> PipelineNodeFactories =
+    [
+        new FilterNodeFactory(),
+        new GroupNodeFactory(),
+        new MappingNodeFactory(),
+    ];
+
+    [Parameter]
+    public EventCallback<IPipelineNode> OnCreate { get; set; }
+
+    private async Task Create(IPipelineNodeFactory factory)
+    {
+        await OnCreate.InvokeAsync(factory.CreateNode());
+    }
+
+}

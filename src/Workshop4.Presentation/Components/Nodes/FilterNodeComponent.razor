@@ -1,0 +1,82 @@
+@namespace Workshop4.Presentation.Components.Nodes
+@using System.Diagnostics.CodeAnalysis
+@using Phazor.Components.Models
+@using Workshop4.Application.Pipelines.Nodes
+@using Workshop4.Application.Pipelines.Models
+@using Workshop4.Presentation.Services
+
+<MudCard Class="node-card" Elevation="0">
+
+    <MudCardHeader>
+        <PhazorHStack
+            Horizontal="HorizontalDistribution.Left"
+            Variant="PhazorStackVariant.Compact"
+            Gap="5px">
+
+            <MudIcon Icon="@Icons.Material.Filled.FilterList"/>
+            <MudText Typo="Typo.subtitle1">Filter</MudText>
+
+        </PhazorHStack>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <PhazorHStack
+            Horizontal="HorizontalDistribution.Between"
+            Vertical="VerticalAlignment.Top"
+            Gap="10px">
+
+            <MudTextField
+                @bind-Value="Node.PropertyName"
+                Label="Field"
+                Variant="Variant.Outlined"
+                FullWidth="true"
+                Disabled="@AppState.Instance.IsExecuting"/>
+
+            <MudSelect
+                T="FilterOperation"
+                @bind-Value="Node.FilterOperation"
+                Label="Operation"
+                Variant="Variant.Outlined"
+                FullWidth="true"
+                Disabled="@AppState.Instance.IsExecuting">
+
+                @foreach (FilterOperation op in Operations)
+                {
+                    <MudSelectItem T="FilterOperation" Value="@op">@FormatOperation(op)</MudSelectItem>
+                }
+
+            </MudSelect>
+
+            <MudTextField
+                @bind-Value="Node.Value"
+                Label="Value"
+                Variant="Variant.Outlined"
+                FullWidth="true"
+                Disabled="@AppState.Instance.IsExecuting"/>
+
+        </PhazorHStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+
+    private static readonly FilterOperation[] Operations = Enum
+        .GetValues<FilterOperation>()
+        .Except([FilterOperation.None])
+        .ToArray();
+
+    [NotNull]
+    [Parameter]
+    [EditorRequired]
+    public required FilterNode? Node { get; set; }
+
+    private static string FormatOperation(FilterOperation op) => op switch
+    {
+        FilterOperation.Equals => "=",
+        FilterOperation.NotEquals => "!=",
+        FilterOperation.GreaterThan => ">",
+        FilterOperation.LessThan => "<",
+        _ => op.ToString(),
+    };
+
+}

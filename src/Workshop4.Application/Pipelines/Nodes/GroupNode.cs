@@ -7,9 +7,11 @@ namespace Workshop4.Application.Pipelines.Nodes;
 
 public sealed class GroupNode : IPipelineNode
 {
-    private readonly HashSet<IPipelineNode> _childNodes = [];
+    private readonly List<IPipelineNode> _childNodes = [];
 
     public bool IsEnabled { get; set; }
+
+    public string Name { get; set; } = string.Empty;
 
     public IReadOnlyCollection<IPipelineNode> ChildNodes => _childNodes;
 
@@ -27,9 +29,11 @@ public sealed class GroupNode : IPipelineNode
         JsonDocument input,
         IPipelinePresentationManager presentationManager)
     {
-        if (IsEnabled is false)
+        if (IsEnabled is false || _childNodes.Count is 0)
             return new NodeExecutionResult.Success(input);
-        
+
+        await presentationManager.OnExecutingNodeChangedAsync(this);
+
         foreach (IPipelineNode node in _childNodes)
         {
             NodeExecutionResult result = await node.ExecuteAsync(input, presentationManager);
@@ -49,5 +53,11 @@ public sealed class GroupNode : IPipelineNode
         }
 
         return new NodeExecutionResult.Success(input);
+    }
+
+    public override string ToString()
+    {
+        string name = string.IsNullOrWhiteSpace(Name) ? "Group" : Name;
+        return $"Group '{name}'";
     }
 }

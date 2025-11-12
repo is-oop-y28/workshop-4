@@ -29,8 +29,8 @@ public sealed class FilterNode : IPipelineNode
         if (IsEnabled is false)
             return new NodeExecutionResult.Success(input);
 
-        presentationManager.OnExecutingNodeChanged(this);
-        await Task.Delay(TimeSpan.FromMilliseconds(200));
+        await presentationManager.OnExecutingNodeChangedAsync(this);
+        await Task.Delay(TimeSpan.FromMilliseconds(500));
 
         if (input is JsonObjectDocument objectDocument)
         {
@@ -92,17 +92,13 @@ public sealed class FilterNode : IPipelineNode
             return new NodeFilterResult.Error("Object property does not contain value");
         }
 
-        bool isNumberOperationSucceeded =
+        bool filterTrue =
             decimal.TryParse(propertyValue.Value, out decimal leftNumber)
             && decimal.TryParse(Value, out decimal rightNumber)
-            && OperationExecutor<decimal>.ExecuteOperation(leftNumber, rightNumber, FilterOperation);
+            && (OperationExecutor<decimal>.ExecuteOperation(leftNumber, rightNumber, FilterOperation)
+                || OperationExecutor<string>.ExecuteOperation(propertyValue.Value, Value, FilterOperation));
 
-        bool isStringOperationSucceeded = OperationExecutor<string>.ExecuteOperation(
-            propertyValue.Value,
-            Value,
-            FilterOperation);
-
-        return new NodeFilterResult.Success(isNumberOperationSucceeded || isStringOperationSucceeded);
+        return new NodeFilterResult.Success(filterTrue);
     }
 
     private static class OperationExecutor<T>
@@ -129,5 +125,21 @@ public sealed class FilterNode : IPipelineNode
         public sealed record Success(bool IsApplicable) : NodeFilterResult;
 
         public sealed record Error(string ErrorMessage) : NodeFilterResult;
+    }
+
+    public override string ToString()
+    {
+        string op = FilterOperation switch
+        {
+            FilterOperation.Equals => "=",
+            FilterOperation.NotEquals => "!=",
+            FilterOperation.GreaterThan => ">",
+            FilterOperation.LessThan => "<",
+            _ => "?",
+        };
+
+        string field = string.IsNullOrWhiteSpace(PropertyName) ? "(field)" : PropertyName;
+        string val = string.IsNullOrWhiteSpace(Value) ? "(value)" : Value;
+        return $"Filter {field} {op} {val}";
     }
 }

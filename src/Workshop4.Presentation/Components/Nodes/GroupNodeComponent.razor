@@ -1,0 +1,58 @@
+@namespace Workshop4.Presentation.Components.Nodes
+@using System.Diagnostics.CodeAnalysis
+@using Phazor.Components.Models
+@using Workshop4.Application.Pipelines.Nodes
+
+<MudCard Class="node-card" Elevation="0">
+
+    <MudCardHeader>
+        <PhazorHStack
+            Horizontal="HorizontalDistribution.Between">
+
+            <PhazorHStack
+                Horizontal="HorizontalDistribution.Left"
+                Variant="PhazorStackVariant.Compact"
+                Gap="5px">
+
+                <MudIcon Icon="@Icons.Material.Filled.Folder"/>
+
+                <MudText Typo="Typo.subtitle1">
+                    @Node.Name
+                </MudText>
+
+            </PhazorHStack>
+
+            <MudButton
+                Variant="Variant.Outlined"
+                Color="Color.Primary"
+                OnClick="@Edit">
+                Open
+            </MudButton>
+
+        </PhazorHStack>
+    </MudCardHeader>
+
+    <MudCardContent>
+        <MudText>
+            Open to edit inner nodes.
+        </MudText>
+    </MudCardContent>
+
+</MudCard>
+
+@code {
+
+    [NotNull]
+    [Parameter]
+    [EditorRequired]
+    public GroupNode? Node { get; set; }
+
+    [Parameter]
+    public EventCallback<GroupNode> OnEdit { get; set; }
+
+    private async Task Edit()
+    {
+        await OnEdit.InvokeAsync(Node);
+    }
+
+}

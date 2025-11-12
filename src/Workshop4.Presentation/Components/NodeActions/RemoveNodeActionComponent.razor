@@ -1,0 +1,21 @@
+@using Workshop4.Presentation.Services
+@namespace Workshop4.Presentation.Components.NodeActions
+
+<MudButton
+    Color="Color.Error"
+    Variant="Variant.Filled"
+    StartIcon="@Icons.Material.Filled.Remove"
+    OnClick="@OnRemoveNodeClicked"
+    Disabled="AppState.Instance.IsExecuting">
+
+    Delete
+
+</MudButton>
+
+@code {
+
+    [Parameter]
+    [EditorRequired]
+    public EventCallback OnRemoveNodeClicked { get; set; }
+
+}

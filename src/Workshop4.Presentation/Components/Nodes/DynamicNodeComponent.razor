@@ -1,0 +1,78 @@
+@using System.Diagnostics.CodeAnalysis
+@using Phazor.Components.Models
+@using Workshop4.Application.Pipelines.Nodes
+@using Workshop4.Presentation.Components.NodeActions
+@namespace Workshop4.Presentation.Components.Nodes
+
+@{
+    bool isExecuting = ReferenceEquals(Node, HighlightedNode);
+    string cssClass = isExecuting ? "pa-0 node-executing" : "pa-0";
+}
+
+<PhazorGrid
+    Dimension="PhazorGridDimension.Rows"
+    DisableAnimation="true"
+    Class="@cssClass">
+
+    <PhazorGridItem MajorIndex="1" MinorIndex="1" MajorSpan="2" Style="height: 100%">
+        <MudCard Elevation="2" Style="height: 100%; background: #f1f1f1" Class="node-card-wrapper"/>
+    </PhazorGridItem>
+
+    <PhazorGridItem MajorIndex="1" MinorIndex="1">
+        <PhazorHStack
+            Horizontal="HorizontalDistribution.Left"
+            Vertical="VerticalAlignment.Center"
+            Gap="10px"
+            Class="pa-3">
+
+            <RemoveNodeActionComponent
+                OnRemoveNodeClicked="@(() => OnNodeRemoved.InvokeAsync(Node))"/>
+
+            <EnabledNodeActionComponent
+                Node="Node"/>
+
+        </PhazorHStack>
+    </PhazorGridItem>
+
+    <PhazorGridItem MajorIndex="2" MinorIndex="1">
+        @switch (Node)
+        {
+            case FilterNode filter:
+                <FilterNodeComponent Node="filter"/>
+                break;
+            case MappingNode map:
+                <MapNodeComponent Node="map"/>
+                break;
+            case GroupNode group:
+                <GroupNodeComponent Node="group" OnEdit="OnGroupOpened"/>
+                break;
+            default:
+                <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined">
+                    Unknown node type: @Node.GetType().Name
+                </MudAlert>
+                break;
+        }
+    </PhazorGridItem>
+
+</PhazorGrid>
+
+@code {
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [NotNull]
+    [Parameter]
+    [EditorRequired]
+    public IPipelineNode? Node { get; set; }
+
+    [Parameter]
+    public IPipelineNode? HighlightedNode { get; set; }
+
+    [Parameter]
+    public EventCallback<IPipelineNode> OnNodeRemoved { get; set; }
+
+    [Parameter]
+    public EventCallback<GroupNode> OnGroupOpened { get; set; }
+
+}

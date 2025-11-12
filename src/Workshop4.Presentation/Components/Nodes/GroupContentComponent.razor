@@ -1,0 +1,81 @@
+@namespace Workshop4.Presentation.Components.Nodes
+@using System.Diagnostics.CodeAnalysis
+@using Phazor.Components.Models
+@using Workshop4.Application.Pipelines.Nodes
+@using Workshop4.Presentation.Services
+@using Direction = Phazor.Components.Models.Direction
+@using HorizontalAlignment = Phazor.Components.Models.HorizontalAlignment
+
+<PhazorVStack
+    Horizontal="HorizontalAlignment.Stretch"
+    Vertical="VerticalDistribution.Top"
+    Gap="10px">
+
+    <PhazorHStack
+        Horizontal="HorizontalDistribution.Between"
+        Style="flex-grow: 0; flex-shrink: 1"
+        Gap="10px">
+
+        <MudTextField @bind-Value="Node.Name"
+                      Label="Group name"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Disabled="@AppState.Instance.IsExecuting"/>
+
+        <NodeAddSelector OnCreate="OnCreateNode"/>
+
+    </PhazorHStack>
+
+    @if (Node.ChildNodes.Count is 0)
+    {
+        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+            This group is empty. Use the selector to add nodes.
+        </MudAlert>
+    }
+    else
+    {
+        <PhazorScroll Direction="Direction.Vertical" Class="pa-4">
+            <PhazorVStack Horizontal="HorizontalAlignment.Stretch" Vertical="VerticalDistribution.Top" Gap="20px">
+                @foreach (IPipelineNode node in Node.ChildNodes)
+                {
+                    <DynamicNodeComponent
+                        Node="node"
+                        Disabled="@AppState.Instance.IsExecuting"
+                        HighlightedNode="@HighlightedNode"
+                        OnNodeRemoved="OnRemoveNode"
+                        OnGroupOpened="OnOpenGroup"/>
+                }
+            </PhazorVStack>
+        </PhazorScroll>
+    }
+
+    <MudSpacer/>
+
+</PhazorVStack>
+
+@code {
+
+    [NotNull]
+    [Parameter]
+    [EditorRequired]
+    public GroupNode? Node { get; set; }
+
+    [Parameter]
+    public EventCallback<GroupNode> OnOpenGroup { get; set; }
+
+    [Parameter]
+    public IPipelineNode? HighlightedNode { get; set; }
+
+    private void OnCreateNode(IPipelineNode node)
+    {
+        Node.AddNode(node);
+        StateHasChanged();
+    }
+
+    private void OnRemoveNode(IPipelineNode node)
+    {
+        Node.RemoveNode(node);
+        StateHasChanged();
+    }
+
+}

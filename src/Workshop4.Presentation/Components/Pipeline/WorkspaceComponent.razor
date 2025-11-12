@@ -1,0 +1,50 @@
+@using System.Diagnostics.CodeAnalysis
+@using Phazor.Components.Models
+@using Workshop4.Application.Pipelines.Nodes
+@using Workshop4.Presentation.Components.Nodes
+@using Workshop4.Presentation.Services
+@namespace Workshop4.Presentation.Components.Pipeline
+
+<MudCard Style="overflow: hidden; flex-grow: 1" Elevation="3">
+
+    <MudCardHeader>
+        <PhazorHStack Horizontal="HorizontalDistribution.Right">
+            <MudButton
+                Variant="Variant.Outlined"
+                StartIcon="@Icons.Material.Filled.ArrowBack"
+                Disabled="@(AppState.Instance.CurrentGroup == AppState.Instance.RootGroup)"
+                OnClick="@NavigateBack">
+                Back
+            </MudButton>
+        </PhazorHStack>
+    </MudCardHeader>
+
+    <MudCardContent Style="overflow: hidden; display: flex; flex-direction: column">
+        <GroupContentComponent
+            Node="AppState.Instance.CurrentGroup"
+            HighlightedNode="@CurrentExecutingNode"
+            OnOpenGroup="OpenGroup"/>
+    </MudCardContent>
+
+</MudCard>
+
+@code {
+
+    [NotNull]
+    [Parameter]
+    [EditorRequired]
+    public IPipelineNode? CurrentExecutingNode { get; set; }
+
+    private Task OpenGroup(GroupNode group)
+    {
+        AppState.Instance.NavigateTo(group);
+        return Task.CompletedTask;
+    }
+
+    private Task NavigateBack()
+    {
+        AppState.Instance.NavigateBack();
+        return Task.CompletedTask;
+    }
+
+}

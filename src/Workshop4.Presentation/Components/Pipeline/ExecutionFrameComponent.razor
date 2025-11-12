@@ -1,0 +1,26 @@
+@using System.Diagnostics.CodeAnalysis
+@using Workshop4.Application.Json
+@using Workshop4.Application.Pipelines.Models
+@namespace Workshop4.Presentation.Components.Pipeline
+
+<MudCard Elevation="2">
+    <MudCardHeader>
+        <MudText Typo="Typo.subtitle2">
+            @ExecutionFrame.Node.ToString()
+        </MudText>
+    </MudCardHeader>
+    <MudCardContent>
+        <pre style="white-space: pre-wrap; margin:0;">
+            @JsonDocumentFormatter.FormatDocument(ExecutionFrame.Input)
+        </pre>
+    </MudCardContent>
+</MudCard>
+
+@code {
+
+    [NotNull]
+    [Parameter]
+    [EditorRequired]
+    public ExecutionFrame? ExecutionFrame { get; set; }
+
+}

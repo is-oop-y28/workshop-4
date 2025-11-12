@@ -1,0 +1,38 @@
+@using System.Diagnostics.CodeAnalysis
+@using Workshop4.Application.Pipelines.Nodes
+@using Workshop4.Presentation.Services
+@namespace Workshop4.Presentation.Components.NodeActions
+
+<MudCheckBox
+    T="bool"
+    Value="Node.IsEnabled"
+    ValueChanged="@OnButtonClicked"
+    Color="ButtonColor"
+    Disabled="AppState.Instance.IsExecuting"
+    Dense="true">
+
+    @ButtonText
+
+</MudCheckBox>
+
+@code {
+
+    private string ButtonText => Node.IsEnabled
+        ? "Enabled"
+        : "Disabled";
+
+    private Color ButtonColor => Node.IsEnabled
+        ? Color.Success
+        : Color.Dark;
+
+    [NotNull]
+    [Parameter]
+    [EditorRequired]
+    public IPipelineNode? Node { get; set; }
+
+    private void OnButtonClicked()
+    {
+        Node.IsEnabled = !Node.IsEnabled;
+    }
+
+}

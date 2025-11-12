@@ -1,0 +1,84 @@
+@using Phazor.Components.Models
+@using Workshop4.Presentation.Models
+@using Workshop4.Presentation.Services
+
+@namespace Workshop4.Presentation.Components.Pipeline
+
+
+<PhazorHStack
+    Style="flex-grow: 0"
+    Horizontal="HorizontalDistribution.Left"
+    Gap="10px">
+
+    <MudButton
+        Variant="Variant.Filled"
+        Color="Color.Primary"
+        StartIcon="@Icons.Material.Filled.PlayArrow"
+        Disabled="@AppState.Instance.IsExecuting"
+        OnClick="@OnRunClicked">
+        Run
+    </MudButton>
+    <MudButton
+        Variant="Variant.Filled"
+        Color="Color.Success"
+        StartIcon="@Icons.Material.Filled.BugReport"
+        Disabled="@AppState.Instance.IsExecuting"
+        OnClick="@OnDebugClicked">
+        Debug
+    </MudButton>
+
+</PhazorHStack>
+
+<PhazorHStack
+    Style="flex-grow: 0"
+    Horizontal="HorizontalDistribution.Left"
+    Gap="10px">
+
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.KeyboardArrowLeft"
+               Disabled="@(AppState.Instance.ExecutionState != ExecutionState.Debug || StepBackDisabled)"
+               OnClick="@OnStepBackClicked">
+        Back
+    </MudButton>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.KeyboardArrowRight"
+               Disabled="@(AppState.Instance.ExecutionState is not ExecutionState.Debug)"
+               OnClick="@OnStepForwardClicked">
+        Forward
+    </MudButton>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.KeyboardDoubleArrowRight"
+               Disabled="@(AppState.Instance.ExecutionState is not ExecutionState.Debug)"
+               OnClick="@OnPassClicked">
+        Pass
+    </MudButton>
+
+</PhazorHStack>
+
+@code {
+
+    [Parameter]
+    [EditorRequired]
+    public EventCallback OnRunClicked { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public EventCallback OnDebugClicked { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public EventCallback OnStepBackClicked { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public EventCallback OnStepForwardClicked { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public EventCallback OnPassClicked { get; set; }
+
+    [Parameter]
+    [EditorRequired]
+    public bool StepBackDisabled { get; set; }
+
+}
